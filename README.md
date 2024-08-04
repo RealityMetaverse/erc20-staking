@@ -22,6 +22,12 @@
 
 ### What's New?
 
+### Version 1.4.3 - 2024/08/04
+
+#### UPDATE: Business Source License 1.1
+
+---
+
 ### Version 1.4.2 - 2024/02/28
 
 #### FIXED: `enoughFundsAvailable` and `ifTargetReached` BUGS
