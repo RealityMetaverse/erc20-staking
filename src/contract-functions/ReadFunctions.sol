@@ -98,6 +98,15 @@ abstract contract ReadFunctions is ComplianceCheck {
     // ======================================
     // =    Functoins to check user data    =
     // ======================================
+    function checkWhitelistedAmountFor(address userAddress, uint256 poolID)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256)
+    {
+        return whitelistedAmounts[poolID][userAddress];
+    }
+
     function checkStakedAmountBy(address userAddress, uint256 poolID)
         external
         view

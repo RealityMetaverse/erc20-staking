@@ -20,6 +20,27 @@ contract AuxiliaryFunctions is ReadFunctions {
         if (userAddress != address(this)) vm.stopPrank();
     }
 
+    function _setWhitelistingStatus(address userAddress, uint256 poolID, bool status) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.setWhitelistingStatus(poolID, status);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _setWhitelistedAmountFor(
+        address userAddress,
+        uint256 poolID,
+        address userAddressToWhitelist,
+        uint256 amount
+    ) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.setWhitelistedAmountFor(poolID, userAddressToWhitelist, amount);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
     function _addPool(address userAddress, bool ifLocked) internal {
         if (userAddress != address(this)) vm.startPrank(userAddress);
 
@@ -52,6 +73,14 @@ contract AuxiliaryFunctions is ReadFunctions {
         if (userAddress != address(this)) vm.startPrank(userAddress);
 
         stakingContract.endStakingPool(poolID, _confirmationCode);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _setPoolMiniumumDeposit(address userAddress, uint256 poolID, uint256 newMinimumDeposit) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.setPoolMiniumumDeposit(poolID, newMinimumDeposit);
 
         if (userAddress != address(this)) vm.stopPrank();
     }

@@ -18,6 +18,7 @@ contract InterestClaimFunctions is AuxiliaryFunctions {
 
     function _testInterestClaim(address userAddress, uint256 _poolID, uint256 _depositNo, uint256 userBalanceAfter)
         internal
+        view
     {
         assertEq(stakingContract.checkClaimableInterestBy(userAddress, _poolID, _depositNo), 0);
         assertEq(_getTokenBalance(userAddress), userBalanceAfter);

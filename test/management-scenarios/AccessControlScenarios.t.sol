@@ -41,4 +41,54 @@ contract AccessControlTest is AuxiliaryFunctions {
             _endPool(addressList[userNo], 0);
         }
     }
+
+    function test_AccessControl_RevertSetWhitelistingStatus() external {
+        for (uint256 userNo = 0; userNo < addressList.length; userNo++) {
+            vm.expectRevert();
+            _setWhitelistingStatus(addressList[userNo], 0, true);
+        }
+    }
+
+    function test_AccessControl_RevertSetWhitelistedAmountFor() external {
+        for (uint256 userNo = 0; userNo < addressList.length; userNo++) {
+            vm.expectRevert();
+            _setWhitelistedAmountFor(addressList[userNo], 0, addressList[userNo], 1);
+        }
+    }
+
+    function test_AccessControl_SetWhitelistingStatus_PoolDoesNotExist() external {
+        vm.expectRevert();
+        _setWhitelistingStatus(address(this), 0, true);
+    }
+
+    function test_AccessControl_SetWhitelistedAmountFor_PoolDoesNotExist() external {
+        vm.expectRevert();
+        _setWhitelistedAmountFor(address(this), 0, address(this), 1);
+    }
+
+    function test_AccessControl_SetWhitelistingStatus_PoolExists() external {
+        _addPool(address(this), true);
+
+        _setWhitelistingStatus(address(this), 0, true);
+    }
+
+    function test_AccessControl_SetWhitelistedAmountFor_PoolExists() external {
+        _addPool(address(this), true);
+
+        _setWhitelistedAmountFor(address(this), 0, address(this), 1);
+    }
+
+    function test_AccessControl_SetWhitelistingStatus_WrongPoolID() external {
+        _addPool(address(this), true);
+
+        vm.expectRevert();
+        _setWhitelistingStatus(address(this), 1, true);
+    }
+
+    function test_AccessControl_SetWhitelistedAmountFor_WrongPoolID() external {
+        _addPool(address(this), true);
+
+        vm.expectRevert();
+        _setWhitelistedAmountFor(address(this), 1, address(this), 1);
+    }
 }

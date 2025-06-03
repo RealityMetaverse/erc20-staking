@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
+// Forked and adjusted from: https://github.com/RealityMetaverse/erc20-staking
 // Copyright 2024 Reality Metaverse
 
 pragma solidity 0.8.20;

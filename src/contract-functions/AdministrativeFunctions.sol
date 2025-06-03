@@ -30,6 +30,22 @@ abstract contract AdministrativeFunctions is ComplianceCheck {
         emit RemoveContractAdmin(userAddress);
     }
 
+    function setWhitelistingStatus(uint256 poolID, bool status) external onlyContractOwner ifPoolExists(poolID) {
+        poolWhitelistingStatuses[poolID] = status;
+
+        emit SetWhitelistingStatus(poolID, status);
+    }
+
+    function setWhitelistedAmountFor(uint256 poolID, address userAddress, uint256 amount)
+        external
+        onlyContractOwner
+        ifPoolExists(poolID)
+    {
+        whitelistedAmounts[poolID][userAddress] = amount;
+
+        emit SetWhitelistedAmountFor(poolID, userAddress, amount);
+    }
+
     function setDefaultStakingTarget(uint256 newStakingTarget) external onlyContractOwner {
         defaultStakingTarget = newStakingTarget;
 

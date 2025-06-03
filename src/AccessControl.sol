@@ -21,11 +21,14 @@ abstract contract AccessControl is ProgramManager {
 
     address public contractOwner;
     mapping(address => bool) public contractAdmins;
+    mapping(uint256 poolID => bool isWhitelistingEnabled) public poolWhitelistingStatuses;
+    mapping(uint256 poolID => mapping(address userAddress => uint256 whitelistedAmount)) public whitelistedAmounts;
 
     // ======================================
     // =              Errors                =
     // ======================================
     error UnauthorizedAccess(AccessTier requiredAccessTier);
+    error OverWhitelistedAmount(address userAddress, uint256 amountToBeStaked, uint256 allowedAmount);
 
     // ======================================
     // =             Functions              =
@@ -56,6 +59,19 @@ abstract contract AccessControl is ProgramManager {
      */
     modifier onlyAdmins() {
         _checkAccess(AccessTier.ADMIN);
+        _;
+    }
+
+    modifier ifCompliedWithWhitelisting(uint256 poolID, uint256 amountToBeStaked) {
+        if (poolWhitelistingStatuses[poolID]) {
+            uint256 whitelistedAmount = whitelistedAmounts[poolID][msg.sender];
+
+            if (whitelistedAmount < amountToBeStaked) {
+                revert OverWhitelistedAmount(msg.sender, amountToBeStaked, whitelistedAmount);
+            }
+
+            whitelistedAmounts[poolID][msg.sender] = whitelistedAmount - amountToBeStaked;
+        }
         _;
     }
 }

@@ -36,4 +36,8 @@ contract ReadFunctions is TestSetUp {
         data[3] = _getTokenBalance(address(stakingContract));
         return data;
     }
+
+    function _getWhitelistedAmount(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingContract.checkWhitelistedAmountFor(userAddress, poolID);
+    }
 }
