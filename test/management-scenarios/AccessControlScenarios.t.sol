@@ -91,4 +91,29 @@ contract AccessControlTest is AuxiliaryFunctions {
         vm.expectRevert();
         _setWhitelistedAmountFor(address(this), 1, address(this), 1);
     }
+
+    function test_AccessControl_RevertSetWhitelistedAmountsForBatch() external {
+        _addPool(address(this), true);
+
+        address[] memory users = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        users[0] = userOne;
+        amounts[0] = amountToStake;
+
+        // Test unauthorized access
+        for (uint256 userNo = 0; userNo < addressList.length; userNo++) {
+            vm.expectRevert();
+            _setWhitelistedAmountsForBatch(addressList[userNo], 0, users, amounts);
+        }
+
+        // Test array length mismatch
+        address[] memory shortUsers = new address[](2);
+        vm.expectRevert("Arrays length mismatch");
+        _setWhitelistedAmountsForBatch(address(this), 0, shortUsers, amounts);
+
+        // Test non-existent pool
+        vm.expectRevert();
+        _setWhitelistedAmountsForBatch(address(this), 1, users, amounts);
+    }
 }

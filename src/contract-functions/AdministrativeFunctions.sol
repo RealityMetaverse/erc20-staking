@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-// Copyright 2024 Reality Metaverse
+// Copyright 2025 Reality Metaverse
 
 pragma solidity 0.8.20;
 
@@ -36,14 +36,29 @@ abstract contract AdministrativeFunctions is ComplianceCheck {
         emit SetWhitelistingStatus(poolID, status);
     }
 
+    function _setWhitelistedAmountFor(uint256 poolID, address userAddress, uint256 amount) private {
+        whitelistedAmounts[poolID][userAddress] = amount;
+        emit SetWhitelistedAmountFor(poolID, userAddress, amount);
+    }
+
     function setWhitelistedAmountFor(uint256 poolID, address userAddress, uint256 amount)
         external
         onlyContractOwner
         ifPoolExists(poolID)
     {
-        whitelistedAmounts[poolID][userAddress] = amount;
+        _setWhitelistedAmountFor(poolID, userAddress, amount);
+    }
 
-        emit SetWhitelistedAmountFor(poolID, userAddress, amount);
+    function setWhitelistedAmountsForBatch(uint256 poolID, address[] calldata userAddresses, uint256[] calldata amounts)
+        external
+        onlyContractOwner
+        ifPoolExists(poolID)
+    {
+        require(userAddresses.length == amounts.length, "Arrays length mismatch");
+
+        for (uint256 i = 0; i < userAddresses.length; i++) {
+            _setWhitelistedAmountFor(poolID, userAddresses[i], amounts[i]);
+        }
     }
 
     function setDefaultStakingTarget(uint256 newStakingTarget) external onlyContractOwner {

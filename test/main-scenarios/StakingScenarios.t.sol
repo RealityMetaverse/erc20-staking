@@ -179,4 +179,39 @@ contract StakingScenarious is AuxiliaryFunctions {
         assertEq(_getTotalStakedBy(userOne, 1), amountToStake * 3);
         assertEq(_getWhitelistedAmount(userOne, 1), 0);
     }
+
+    function test_Staking_BatchWhitelistAmounts() external {
+        // Setup initial pool
+        _addPool(address(this), true);
+        _setWhitelistingStatus(address(this), 0, true);
+
+        // Test 1: Set whitelisted amounts for multiple users
+        address[] memory users = new address[](3);
+        uint256[] memory amounts = new uint256[](3);
+
+        users[0] = userOne;
+        users[1] = userTwo;
+        users[2] = userThree;
+
+        amounts[0] = amountToStake;
+        amounts[1] = amountToStake * 2;
+        amounts[2] = amountToStake * 3;
+
+        _setWhitelistedAmountsForBatch(address(this), 0, users, amounts);
+
+        // Verify amounts were set correctly
+        assertEq(_getWhitelistedAmount(userOne, 0), amountToStake);
+        assertEq(_getWhitelistedAmount(userTwo, 0), amountToStake * 2);
+        assertEq(_getWhitelistedAmount(userThree, 0), amountToStake * 3);
+
+        // Test 2: Verify staking works with whitelisted amounts
+        _increaseAllowance(userOne, amountToStake);
+        _stakeTokenWithTest(userOne, 0, amountToStake, false);
+
+        _increaseAllowance(userTwo, amountToStake * 2);
+        _stakeTokenWithTest(userTwo, 0, amountToStake * 2, false);
+
+        _increaseAllowance(userThree, amountToStake * 3);
+        _stakeTokenWithTest(userThree, 0, amountToStake * 3, false);
+    }
 }

@@ -144,4 +144,17 @@ contract AuxiliaryFunctions is ReadFunctions {
             }
         }
     }
+
+    function _setWhitelistedAmountsForBatch(
+        address userAddress,
+        uint256 poolID,
+        address[] memory userAddresses,
+        uint256[] memory amounts
+    ) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.setWhitelistedAmountsForBatch(poolID, userAddresses, amounts);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
 }
