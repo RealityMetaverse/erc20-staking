@@ -184,7 +184,6 @@ contract WithdrawalScenarious is WithdrawalFunctions {
         console.log(stakingContract.checkStakedAmountBy(userOne, 0));
         console.log(stakingContract.checkWithdrawnAmountBy(userOne, 0));
         console.log(stakingContract.checkTotalStaked(0));
-        //        _withdrawTokenWithTest(userOne, 0, 0, false, true);
         _withdrawTokenWithTest(userOne, 0, 9999, false, true);
     }
 
@@ -200,5 +199,83 @@ contract WithdrawalScenarious is WithdrawalFunctions {
 
         _withdrawTokenWithTest(userOne, 0, 0, false, true);
         _withdrawTokenWithTest(userOne, 0, 1, false, true);
+    }
+
+    function test_Withdrawal_WhitelistEnabled() external {
+        _addPool(address(this), false);
+        _setWhitelistingStatus(address(this), 0, true);
+        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+
+        assertEq(_getWhitelistedAmount(userOne, 0), 0);
+
+        _withdrawTokenWithTest(userOne, 0, 0, false, true);
+        _withdrawTokenWithTest(userOne, 0, 1, false, true);
+    }
+
+    function test_Withdrawal_WhitelistDisabled() external {
+        _addPool(address(this), false);
+        _setWhitelistingStatus(address(this), 0, false);
+        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+
+        _withdrawTokenWithTest(userOne, 0, 0, false, true);
+        _withdrawTokenWithTest(userOne, 0, 1, false, true);
+    }
+
+    function test_Withdrawal_WhitelistEnabledAfterStaking() external {
+        _addPool(address(this), false);
+        _setWhitelistingStatus(address(this), 0, false);
+
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+
+        _setWhitelistingStatus(address(this), 0, true);
+        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+
+        _withdrawTokenWithTest(userOne, 0, 0, false, true);
+        _withdrawTokenWithTest(userOne, 0, 1, false, true);
+    }
+
+    function test_Withdrawal_WhitelistMultiplePools() external {
+        _addPool(address(this), false);
+        _addPool(address(this), false);
+
+        _setWhitelistingStatus(address(this), 0, true);
+        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+        _stakeTokenWithAllowance(userOne, 1, amountToStake);
+
+        _withdrawTokenWithTest(userOne, 0, 0, false, true);
+        _withdrawTokenWithTest(userOne, 1, 0, false, true);
+    }
+
+    function test_Withdrawal_WhitelistWithInterest() external {
+        _addPool(address(this), false);
+        _setWhitelistingStatus(address(this), 0, true);
+        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+
+        vm.warp(1706809873);
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+        _stakeTokenWithAllowance(userOne, 0, amountToStake);
+
+        uint256 totalStaked = amountToStake * 2;
+
+        _increaseAllowance(address(this), amountToProvide);
+        stakingContract.provideInterest(amountToProvide);
+
+        vm.warp(1738401000);
+        _withdrawTokenWithTest(userOne, 0, 0, false, true);
+        _withdrawTokenWithTest(userOne, 0, 1, false, true);
+
+        uint256 finalBalance = myToken.balanceOf(userOne);
+        assertTrue(
+            finalBalance > totalStaked, "Final balance should be greater than total staked amount due to interest"
+        );
     }
 }
