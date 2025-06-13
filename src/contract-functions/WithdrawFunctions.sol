@@ -10,64 +10,6 @@ abstract contract WithdrawFunctions is ReadFunctions, WriteFunctions {
     // ======================================
     // =     Interest Claim Functions       =
     // ======================================
-    function _calculateDaysPassed(uint256 poolID, uint256 startDate, uint256 withdrawalDate)
-        private
-        view
-        returns (uint256)
-    {
-        uint256 timePassed;
-        uint256 poolEndDate = stakingPoolList[poolID].endDate;
-
-        if (withdrawalDate != 0) {
-            if (poolEndDate == 0 || withdrawalDate <= poolEndDate) {
-                timePassed = withdrawalDate - startDate;
-            } else if (withdrawalDate > poolEndDate) {
-                timePassed = poolEndDate - startDate;
-            }
-        } else if (poolEndDate != 0) {
-            timePassed = poolEndDate - startDate;
-        } else {
-            timePassed = block.timestamp - startDate;
-        }
-
-        // Convert the time elapsed to days
-        uint256 daysPassed = timePassed / (1 days);
-        return daysPassed;
-    }
-
-    function _calculateInterest(uint256 poolID, address userAddress, uint256 depositNumber)
-        private
-        view
-        returns (uint256)
-    {
-        uint256 daysPassed;
-        uint256 depositAPY;
-        uint256 depositAmount;
-        uint256 interestAlreadyClaimed;
-
-        uint256 claimableInterest;
-
-        // A local variable to refer to the appropriate TokenDeposit
-        TokenDeposit storage deposit = stakingPoolList[poolID].stakerDepositList[userAddress][depositNumber];
-
-        daysPassed = _calculateDaysPassed(poolID, deposit.stakingDate, deposit.withdrawalDate);
-        depositAPY = deposit.APY;
-        depositAmount = deposit.amount;
-        interestAlreadyClaimed = deposit.claimedInterest;
-
-        claimableInterest = (((depositAmount * ((depositAPY / 365) * daysPassed) / 100)) / FIXED_POINT_PRECISION)
-            - interestAlreadyClaimed;
-        return claimableInterest;
-    }
-
-    function _checkClaimableInterestBy(address userAddress, uint256 poolID, uint256 depositNumber)
-        private
-        view
-        returns (uint256)
-    {
-        return _calculateInterest(poolID, userAddress, depositNumber);
-    }
-
     function checkClaimableInterestBy(address userAddress, uint256 poolID, uint256 depositNumber)
         external
         view
@@ -78,7 +20,7 @@ abstract contract WithdrawFunctions is ReadFunctions, WriteFunctions {
     }
 
     function checkTotalClaimableInterestBy(address userAddress, uint256 poolID) public view returns (uint256) {
-        uint256 userDepositCount = checkDepositCountOfAddress(userAddress, poolID);
+        uint256 userDepositCount = _checkDepositCountOfAddress(userAddress, poolID);
         uint256 totalClaimableInterest = 0;
 
         for (uint256 depositNumber = 0; depositNumber < userDepositCount; depositNumber++) {
@@ -105,7 +47,7 @@ abstract contract WithdrawFunctions is ReadFunctions, WriteFunctions {
         ifPoolExists(poolID)
         returns (uint256)
     {
-        uint256 userDepositCount = checkDepositCountOfAddress(userAddress, poolID);
+        uint256 userDepositCount = _checkDepositCountOfAddress(userAddress, poolID);
         uint256 totalLastDayGenerated = 0;
 
         StakingPool storage targetStakingPool = stakingPoolList[poolID];
@@ -135,7 +77,7 @@ abstract contract WithdrawFunctions is ReadFunctions, WriteFunctions {
 
             for (uint256 stakerNo = 0; stakerNo < stakingPoolList[poolID].stakerAddressList.length; stakerNo++) {
                 userAddress = stakingPoolList[poolID].stakerAddressList[stakerNo];
-                userDepositCount = checkDepositCountOfAddress(userAddress, poolID);
+                userDepositCount = _checkDepositCountOfAddress(userAddress, poolID);
 
                 for (uint256 depositNumber = 0; depositNumber < userDepositCount; depositNumber++) {
                     TokenDeposit storage targetDeposit =

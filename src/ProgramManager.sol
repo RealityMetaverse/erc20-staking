@@ -44,6 +44,15 @@ contract ProgramManager {
         uint256 claimedInterest;
     }
 
+    struct TokenDepositWithClaimableInterest {
+        uint256 stakingDate;
+        uint256 withdrawalDate;
+        uint256 amount;
+        uint256 APY;
+        uint256 claimedInterest;
+        uint256 claimableInterest;
+    }
+
     /**
      *     - The contract has ability to create 2 types of staking pools: LOCKED, FLEXIBLE
      *     - LOCKED staking pools' isWithdrawalOpen parameter is false by default

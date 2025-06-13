@@ -37,7 +37,27 @@ contract ReadFunctions is TestSetUp {
         return data;
     }
 
-    function _getWhitelistedAmount(address userAddress, uint256 poolID) internal view returns (uint256) {
-        return stakingContract.checkWhitelistedAmountFor(userAddress, poolID);
+    function _getAllowedAmountLeftFor(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingContract.checkAllowedAmountLeftFor(userAddress, poolID);
+    }
+
+    function _getTotalAllowedAmountFor(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingContract.checkTotalAllowedAmountFor(userAddress, poolID);
+    }
+
+    function _getTotalUsedAllowedAmountFor(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingContract.checkTotalUsedAllowedAmountFor(userAddress, poolID);
+    }
+
+    function _getAllowlistEntryCountFor(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingContract.getAllowlistEntryCountFor(poolID, userAddress);
+    }
+
+    function _getAllowlistRemainingAmountsFor(address userAddress, uint256 poolID)
+        internal
+        view
+        returns (uint256[] memory)
+    {
+        return stakingContract.getAllowlistRemainingAmountsFor(userAddress, poolID);
     }
 }

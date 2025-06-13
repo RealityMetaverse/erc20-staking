@@ -30,26 +30,26 @@ abstract contract AdministrativeFunctions is ComplianceCheck {
         emit RemoveContractAdmin(userAddress);
     }
 
-    function setWhitelistingStatus(uint256 poolID, bool status) external onlyContractOwner ifPoolExists(poolID) {
-        poolWhitelistingStatuses[poolID] = status;
+    function setAllowlistStatus(uint256 poolID, bool status) external onlyContractOwner ifPoolExists(poolID) {
+        poolAllowlistStatuses[poolID] = status;
 
-        emit SetWhitelistingStatus(poolID, status);
+        emit SetAllowlistStatus(poolID, status);
     }
 
-    function _setWhitelistedAmountFor(uint256 poolID, address userAddress, uint256 amount) private {
-        whitelistedAmounts[poolID][userAddress] = amount;
-        emit SetWhitelistedAmountFor(poolID, userAddress, amount);
+    function _addAllowedAmountFor(uint256 poolID, address userAddress, uint256 amount) private {
+        userAllowedAmounts[poolID][userAddress].push(amount);
+        emit AddAllowedAmountFor(poolID, userAddress, amount);
     }
 
-    function setWhitelistedAmountFor(uint256 poolID, address userAddress, uint256 amount)
+    function addAllowedAmountFor(uint256 poolID, address userAddress, uint256 amount)
         external
         onlyContractOwner
         ifPoolExists(poolID)
     {
-        _setWhitelistedAmountFor(poolID, userAddress, amount);
+        _addAllowedAmountFor(poolID, userAddress, amount);
     }
 
-    function setWhitelistedAmountsForBatch(uint256 poolID, address[] calldata userAddresses, uint256[] calldata amounts)
+    function addAllowedAmountsForBatch(uint256 poolID, address[] calldata userAddresses, uint256[] calldata amounts)
         external
         onlyContractOwner
         ifPoolExists(poolID)
@@ -57,7 +57,63 @@ abstract contract AdministrativeFunctions is ComplianceCheck {
         require(userAddresses.length == amounts.length, "Arrays length mismatch");
 
         for (uint256 i = 0; i < userAddresses.length; i++) {
-            _setWhitelistedAmountFor(poolID, userAddresses[i], amounts[i]);
+            _addAllowedAmountFor(poolID, userAddresses[i], amounts[i]);
+        }
+    }
+
+    function _removeLastAllowlistEntryFor(uint256 poolID, address userAddress) private {
+        uint256[] storage allowedAmounts = userAllowedAmounts[poolID][userAddress];
+        require(allowedAmounts.length > 0, "No allowlist entries to remove");
+        allowedAmounts.pop();
+        emit RemoveLastAllowlistEntryFor(poolID, userAddress);
+    }
+
+    function removeLastAllowlistEntryFor(uint256 poolID, address userAddress)
+        external
+        onlyContractOwner
+        ifPoolExists(poolID)
+    {
+        _removeLastAllowlistEntryFor(poolID, userAddress);
+    }
+
+    function removeLastAllowlistEntriesForBatch(uint256 poolID, address[] calldata userAddresses)
+        external
+        onlyContractOwner
+        ifPoolExists(poolID)
+    {
+        for (uint256 i = 0; i < userAddresses.length; i++) {
+            _removeLastAllowlistEntryFor(poolID, userAddresses[i]);
+        }
+    }
+
+    function _setAmountOfAllowlistEntry(uint256 poolID, address userAddress, uint256 entryNo, uint256 amount)
+        private
+        ifAllowlistEntryExists(poolID, userAddress, entryNo)
+    {
+        userAllowedAmounts[poolID][userAddress][entryNo] = amount;
+        emit SetAmountOfAllowlistEntry(poolID, userAddress, entryNo, amount);
+    }
+
+    function setAmountOfAllowlistEntry(uint256 poolID, address userAddress, uint256 entryNo, uint256 amount)
+        external
+        onlyContractOwner
+        ifPoolExists(poolID)
+    {
+        _setAmountOfAllowlistEntry(poolID, userAddress, entryNo, amount);
+    }
+
+    function setAmountOfAllowlistEntriesForBatch(
+        uint256 poolID,
+        address[] calldata userAddresses,
+        uint256[] calldata entryNos,
+        uint256[] calldata amounts
+    ) external onlyContractOwner ifPoolExists(poolID) {
+        require(
+            userAddresses.length == entryNos.length && userAddresses.length == amounts.length, "Arrays length mismatch"
+        );
+
+        for (uint256 i = 0; i < userAddresses.length; i++) {
+            _setAmountOfAllowlistEntry(poolID, userAddresses[i], entryNos[i], amounts[i]);
         }
     }
 

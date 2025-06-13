@@ -80,112 +80,244 @@ contract StakingScenarious is AuxiliaryFunctions {
         _stakeTokenWithTest(userOne, 0, amountToStake, true);
     }
 
-    function test_Staking_WhitelistingEnabled() external {
+    function test_Staking_AllowlistEnabled() external {
         _addPool(address(this), true);
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake);
+        _setAllowlistStatus(address(this), 0, true);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake);
 
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, false);
     }
 
-    function test_Staking_WhitelistingAmountExceeded() external {
+    function test_Staking_AllowlistAmountExceeded() external {
         _addPool(address(this), true);
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake - 1);
+        _setAllowlistStatus(address(this), 0, true);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake - 1);
 
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, true);
     }
 
-    function test_Staking_WhitelistAmountUpdatesAndMultiplePools() external {
-        // Setup initial pool with whitelisting enabled
+    function test_Staking_AllowlistAmountUpdatesAndMultiplePools() external {
+        // Setup initial pool with allowlist enabled
         _addPool(address(this), true);
         _setPoolMiniumumDeposit(address(this), 0, amountToStake / 10);
 
-        // Test 1
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake);
+        // Test 1: Verify staking works when allowlist is disabled
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake);
 
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, false);
 
-        assertEq(_getWhitelistedAmount(userOne, 0), amountToStake);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), amountToStake);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake);
+        assertEq(_getTotalStaked(0), amountToStake);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], amountToStake);
 
-        // Test 2
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake - 1);
+        // Test 2: Verify staking fails when allowlist is enabled and allowed amount is insufficient
+        _setAllowlistStatus(address(this), 0, true);
+        _setAmountOfAllowlistEntry(address(this), 0, userOne, 0, amountToStake - 1);
 
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, true);
 
-        assertEq(_getWhitelistedAmount(userOne, 0), amountToStake - 1);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), amountToStake - 1);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake);
+        assertEq(_getTotalStaked(0), amountToStake);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], amountToStake - 1);
 
-        // Test 3
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake);
+        // Test 3: Verify staking succeeds when allowlist is enabled and allowed amount is sufficient
+        _setAmountOfAllowlistEntry(address(this), 0, userOne, 0, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, false);
 
-        assertEq(_getWhitelistedAmount(userOne, 0), 0);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 0);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 2);
+        assertEq(_getTotalStaked(0), amountToStake * 2);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 0);
 
-        // Test 4
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake);
+        // Test 4: Verify partial staking works and updates allowed amount correctly
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake);
 
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake - 5, false);
 
-        assertEq(_getWhitelistedAmount(userOne, 0), 5);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 5);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 3 - 5);
+        assertEq(_getTotalStaked(0), amountToStake * 3 - 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 2);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[1], 5);
 
-        // Test 5
+        // Test 5: Verify staking fails when trying to stake more than remaining allowed amount
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, true);
 
-        // Test 6
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 5);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 3 - 5);
+        assertEq(_getTotalStaked(0), amountToStake * 3 - 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 2);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[1], 5);
+
+        // Test 6: Verify staking succeeds when allowed amount is increased
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, false);
 
-        // Test 7
-        _setWhitelistedAmountFor(address(this), 0, userOne, 0);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 5);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 4 - 5);
+        assertEq(_getTotalStaked(0), amountToStake * 4 - 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 3);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], 5);
+
+        // Test 7: Verify staking fails when allowed amount is set to 0
+        _addAllowedAmountFor(address(this), 0, userOne, 0);
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, true);
 
-        // Test 8
-        _setWhitelistingStatus(address(this), 0, false);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 5);
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 4 - 5);
+        assertEq(_getTotalStaked(0), amountToStake * 4 - 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 4);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], 5);
+
+        // Test 8: Verify staking works when allowlist is disabled
+        _setAllowlistStatus(address(this), 0, false);
         _stakeTokenWithTest(userOne, 0, amountToStake, false);
 
         assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 5 - 5);
+        assertEq(_getTotalStaked(0), amountToStake * 5 - 5);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 4);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], 5);
 
-        // Test 9
+        // Test 9: Verify removeLastAllowlistEntryFor works correctly
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake * 2);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), amountToStake * 3 + 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 6);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[1], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], 5);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[3], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[4], amountToStake);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[5], amountToStake * 2);
+
+        _removeLastAllowlistEntryFor(address(this), 0, userOne);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), amountToStake + 5);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 5);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[1], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], 5);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[3], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[4], amountToStake);
+
+        // Test 10: Verify removeLastAllowlistEntriesForBatch works correctly
+        address[] memory usersToRemove = new address[](2);
+        usersToRemove[0] = userOne;
+        usersToRemove[1] = userTwo;
+
+        _addAllowedAmountFor(address(this), 0, userTwo, amountToStake);
+        _addAllowedAmountFor(address(this), 0, userTwo, amountToStake * 2);
+
+        _removeLastAllowlistEntriesForBatch(address(this), 0, usersToRemove);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 5);
+        assertEq(_getAllowedAmountLeftFor(userTwo, 0), amountToStake);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 4);
+        assertEq(_getAllowlistEntryCountFor(userTwo, 0), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[1], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], 5);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[3], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userTwo, 0)[0], amountToStake);
+
+        // Test 11: Verify setAmountOfAllowlistEntriesForBatch works correctly
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake);
+
+        address[] memory usersToUpdate = new address[](2);
+        uint256[] memory entryNos = new uint256[](2);
+        uint256[] memory amounts = new uint256[](2);
+
+        usersToUpdate[0] = userOne;
+        usersToUpdate[1] = userTwo;
+        entryNos[0] = 0;
+        entryNos[1] = 0;
+        amounts[0] = amountToStake * 3;
+        amounts[1] = amountToStake * 4;
+
+        _setAmountOfAllowlistEntriesForBatch(address(this), 0, usersToUpdate, entryNos, amounts);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), amountToStake * 3 + 5);
+        assertEq(_getAllowedAmountLeftFor(userTwo, 0), amountToStake * 4);
+        assertEq(_getAllowlistEntryCountFor(userOne, 0), 5);
+        assertEq(_getAllowlistEntryCountFor(userTwo, 0), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[0], 5);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[1], amountToStake);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[2], amountToStake);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 0)[3], 0);
+        assertEq(_getAllowlistRemainingAmountsFor(userTwo, 0)[0], amountToStake * 4);
+
+        // Test 12: Setup second pool with allowlist disabled
         _addPool(address(this), true);
         _setPoolMiniumumDeposit(address(this), 1, amountToStake / 10);
 
-        // Test 10
+        // Test 13: Verify staking works in second pool when allowlist is disabled
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 1, amountToStake, false);
 
-        // Test 11
-        _setWhitelistedAmountFor(address(this), 1, userOne, 0);
+        assertEq(_getTotalStakedBy(userOne, 1), amountToStake);
+        assertEq(_getTotalStaked(1), amountToStake);
+        assertEq(_getAllowedAmountLeftFor(userOne, 1), 0);
+        assertEq(_getAllowlistEntryCountFor(userOne, 1), 0);
+
+        // Test 14: Verify staking works in second pool when allowlist is disabled and allowed amount is 0
+        _addAllowedAmountFor(address(this), 1, userOne, 0);
 
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 1, amountToStake, false);
 
-        // Test 13
-        _setWhitelistingStatus(address(this), 1, true);
+        assertEq(_getTotalStakedBy(userOne, 1), amountToStake * 2);
+        assertEq(_getTotalStaked(1), amountToStake * 2);
+        assertEq(_getAllowedAmountLeftFor(userOne, 1), 0);
+        assertEq(_getAllowlistEntryCountFor(userOne, 1), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 1)[0], 0);
+
+        // Test 15: Verify staking fails in second pool when allowlist is enabled and no allowed amount
+        _setAllowlistStatus(address(this), 1, true);
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 1, amountToStake, true);
 
-        // Test 14
-        _setWhitelistedAmountFor(address(this), 1, userOne, amountToStake);
+        assertEq(_getTotalStakedBy(userOne, 1), amountToStake * 2);
+        assertEq(_getTotalStaked(1), amountToStake * 2);
+        assertEq(_getAllowedAmountLeftFor(userOne, 1), 0);
+        assertEq(_getAllowlistEntryCountFor(userOne, 1), 1);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 1)[0], 0);
+
+        // Test 16: Verify staking succeeds in second pool when allowlist is enabled and allowed amount is sufficient
+        _addAllowedAmountFor(address(this), 1, userOne, amountToStake);
         _stakeTokenWithTest(userOne, 1, amountToStake, false);
 
         assertEq(_getTotalStakedBy(userOne, 1), amountToStake * 3);
-        assertEq(_getWhitelistedAmount(userOne, 1), 0);
+        assertEq(_getTotalStaked(1), amountToStake * 3);
+        assertEq(_getAllowedAmountLeftFor(userOne, 1), 0);
+        assertEq(_getAllowlistEntryCountFor(userOne, 1), 2);
+        assertEq(_getAllowlistRemainingAmountsFor(userOne, 1)[1], 0);
+
+        // Final state verification
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake * 5 - 5);
+        assertEq(_getTotalStakedBy(userOne, 1), amountToStake * 3);
+        assertEq(_getTotalStaked(0), amountToStake * 5 - 5);
+        assertEq(_getTotalStaked(1), amountToStake * 3);
+        assertEq(_getAllowedAmountLeftFor(userOne, 1), 0);
     }
 
-    function test_Staking_BatchWhitelistAmounts() external {
+    function test_Staking_BatchAllowlistAmounts() external {
         // Setup initial pool
         _addPool(address(this), true);
-        _setWhitelistingStatus(address(this), 0, true);
+        _setAllowlistStatus(address(this), 0, true);
 
-        // Test 1: Set whitelisted amounts for multiple users
+        // Test 1: Set allowed amounts for multiple users
         address[] memory users = new address[](3);
         uint256[] memory amounts = new uint256[](3);
 
@@ -197,14 +329,14 @@ contract StakingScenarious is AuxiliaryFunctions {
         amounts[1] = amountToStake * 2;
         amounts[2] = amountToStake * 3;
 
-        _setWhitelistedAmountsForBatch(address(this), 0, users, amounts);
+        _addAllowedAmountsForBatch(address(this), 0, users, amounts);
 
         // Verify amounts were set correctly
-        assertEq(_getWhitelistedAmount(userOne, 0), amountToStake);
-        assertEq(_getWhitelistedAmount(userTwo, 0), amountToStake * 2);
-        assertEq(_getWhitelistedAmount(userThree, 0), amountToStake * 3);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), amountToStake);
+        assertEq(_getAllowedAmountLeftFor(userTwo, 0), amountToStake * 2);
+        assertEq(_getAllowedAmountLeftFor(userThree, 0), amountToStake * 3);
 
-        // Test 2: Verify staking works with whitelisted amounts
+        // Test 2: Verify staking works with allowed amounts
         _increaseAllowance(userOne, amountToStake);
         _stakeTokenWithTest(userOne, 0, amountToStake, false);
 
@@ -213,5 +345,18 @@ contract StakingScenarious is AuxiliaryFunctions {
 
         _increaseAllowance(userThree, amountToStake * 3);
         _stakeTokenWithTest(userThree, 0, amountToStake * 3, false);
+
+        // Verify final state after all staking operations
+        assertEq(_getTotalStakedBy(userOne, 0), amountToStake);
+        assertEq(_getTotalStakedBy(userTwo, 0), amountToStake * 2);
+        assertEq(_getTotalStakedBy(userThree, 0), amountToStake * 3);
+
+        // Verify no allowed amounts remain
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 0);
+        assertEq(_getAllowedAmountLeftFor(userTwo, 0), 0);
+        assertEq(_getAllowedAmountLeftFor(userThree, 0), 0);
+
+        // Verify total staked in pool
+        assertEq(_getTotalStaked(0), amountToStake * 6);
     }
 }

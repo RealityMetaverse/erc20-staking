@@ -14,7 +14,7 @@ abstract contract StakingFunctions is ReadFunctions, WriteFunctions {
         ifAvailable(poolID, PoolDataType.IS_STAKING_OPEN)
         enoughTokenSent(tokenAmount, stakingPoolList[poolID].minimumDeposit)
         ifTargetReached(poolID, tokenAmount)
-        ifCompliedWithWhitelisting(poolID, tokenAmount)
+        ifCompliedWithAllowlist(poolID, tokenAmount)
     {
         // Update the staking pool balances
         _updatePoolData(ActionType.STAKING, poolID, msg.sender, 0, tokenAmount);

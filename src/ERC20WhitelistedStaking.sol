@@ -10,7 +10,7 @@ import "./contract-functions/WithdrawFunctions.sol";
 
 /// @title ERC20 Staking (v1.4.3)
 /// @author Heydar Badirli
-contract ERC20Staking is AdministrativeFunctions, StakingFunctions, WithdrawFunctions {
+contract ERC20WhitelistedStaking is AdministrativeFunctions, StakingFunctions, WithdrawFunctions {
     constructor(
         address tokenAddress,
         uint256 _defaultStakingTarget,

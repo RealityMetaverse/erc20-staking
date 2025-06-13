@@ -20,23 +20,79 @@ contract AuxiliaryFunctions is ReadFunctions {
         if (userAddress != address(this)) vm.stopPrank();
     }
 
-    function _setWhitelistingStatus(address userAddress, uint256 poolID, bool status) internal {
+    function _setAllowlistStatus(address userAddress, uint256 poolID, bool status) internal {
         if (userAddress != address(this)) vm.startPrank(userAddress);
 
-        stakingContract.setWhitelistingStatus(poolID, status);
+        stakingContract.setAllowlistStatus(poolID, status);
 
         if (userAddress != address(this)) vm.stopPrank();
     }
 
-    function _setWhitelistedAmountFor(
+    function _addAllowedAmountFor(address userAddress, uint256 poolID, address userAddressToAllow, uint256 amount)
+        internal
+    {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.addAllowedAmountFor(poolID, userAddressToAllow, amount);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _addAllowedAmountsForBatch(
         address userAddress,
         uint256 poolID,
-        address userAddressToWhitelist,
+        address[] memory userAddresses,
+        uint256[] memory amounts
+    ) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.addAllowedAmountsForBatch(poolID, userAddresses, amounts);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _removeLastAllowlistEntryFor(address userAddress, uint256 poolID, address userAddressToModify) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.removeLastAllowlistEntryFor(poolID, userAddressToModify);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _removeLastAllowlistEntriesForBatch(address userAddress, uint256 poolID, address[] memory userAddresses)
+        internal
+    {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.removeLastAllowlistEntriesForBatch(poolID, userAddresses);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _setAmountOfAllowlistEntry(
+        address userAddress,
+        uint256 poolID,
+        address userAddressToModify,
+        uint256 entryNo,
         uint256 amount
     ) internal {
         if (userAddress != address(this)) vm.startPrank(userAddress);
 
-        stakingContract.setWhitelistedAmountFor(poolID, userAddressToWhitelist, amount);
+        stakingContract.setAmountOfAllowlistEntry(poolID, userAddressToModify, entryNo, amount);
+
+        if (userAddress != address(this)) vm.stopPrank();
+    }
+
+    function _setAmountOfAllowlistEntriesForBatch(
+        address userAddress,
+        uint256 poolID,
+        address[] memory userAddresses,
+        uint256[] memory entryNos,
+        uint256[] memory amounts
+    ) internal {
+        if (userAddress != address(this)) vm.startPrank(userAddress);
+
+        stakingContract.setAmountOfAllowlistEntriesForBatch(poolID, userAddresses, entryNos, amounts);
 
         if (userAddress != address(this)) vm.stopPrank();
     }
@@ -143,18 +199,5 @@ contract AuxiliaryFunctions is ReadFunctions {
                 _stakeTokenWithTest(addressList[userNo], No, amountToStake, false);
             }
         }
-    }
-
-    function _setWhitelistedAmountsForBatch(
-        address userAddress,
-        uint256 poolID,
-        address[] memory userAddresses,
-        uint256[] memory amounts
-    ) internal {
-        if (userAddress != address(this)) vm.startPrank(userAddress);
-
-        stakingContract.setWhitelistedAmountsForBatch(poolID, userAddresses, amounts);
-
-        if (userAddress != address(this)) vm.stopPrank();
     }
 }

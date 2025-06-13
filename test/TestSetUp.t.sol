@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import {MockToken} from "./MockToken.sol";
 
-import {ERC20Staking} from "../src/ERC20Staking.sol";
+import {ERC20WhitelistedStaking} from "../src/ERC20WhitelistedStaking.sol";
 import "../src/ProgramManager.sol";
 
 contract TestSetUp is Test {
@@ -21,7 +21,7 @@ contract TestSetUp is Test {
     uint256 _lockedAPY = 200;
     uint256 _flexibleAPY = 10;
 
-    ERC20Staking stakingContract;
+    ERC20WhitelistedStaking stakingContract;
     uint256 _confirmationCode = 0;
 
     address contractAdmin = address(1);
@@ -42,8 +42,9 @@ contract TestSetUp is Test {
 
     function setUp() external {
         myToken = new MockToken(myTokenDecimal);
-        stakingContract =
-            new ERC20Staking(address(myToken), _defaultStakingTarget, _defaultMinimumDeposit, _confirmationCode);
+        stakingContract = new ERC20WhitelistedStaking(
+            address(myToken), _defaultStakingTarget, _defaultMinimumDeposit, _confirmationCode
+        );
         stakingContract.addContractAdmin(contractAdmin);
 
         for (uint256 userNo = 0; userNo < addressList.length; userNo++) {

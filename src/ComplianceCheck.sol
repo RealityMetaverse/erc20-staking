@@ -201,8 +201,10 @@ abstract contract ComplianceCheck is AccessControl, ReentrancyGuard {
     event AddContractAdmin(address indexed user);
     event RemoveContractAdmin(address indexed user);
 
-    event SetWhitelistingStatus(uint256 indexed poolID, bool status);
-    event SetWhitelistedAmountFor(uint256 indexed poolID, address indexed user, uint256 amount);
+    event SetAllowlistStatus(uint256 indexed poolID, bool status);
+    event AddAllowedAmountFor(uint256 indexed poolID, address indexed user, uint256 amount);
+    event SetAmountOfAllowlistEntry(uint256 indexed poolID, address indexed user, uint256 entryNo, uint256 amount);
+    event RemoveLastAllowlistEntryFor(uint256 indexed poolID, address indexed user);
 
     event UpdateDefaultStakingTarget(uint256 newDefaultStakingTarget);
     event UpdateDefaultMinimumDeposit(uint256 newDefaultMinimumDeposit);

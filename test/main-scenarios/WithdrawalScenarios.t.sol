@@ -201,24 +201,24 @@ contract WithdrawalScenarious is WithdrawalFunctions {
         _withdrawTokenWithTest(userOne, 0, 1, false, true);
     }
 
-    function test_Withdrawal_WhitelistEnabled() external {
+    function test_Withdrawal_AllowlistEnabled() external {
         _addPool(address(this), false);
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+        _setAllowlistStatus(address(this), 0, true);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake * 2);
 
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
 
-        assertEq(_getWhitelistedAmount(userOne, 0), 0);
+        assertEq(_getAllowedAmountLeftFor(userOne, 0), 0);
 
         _withdrawTokenWithTest(userOne, 0, 0, false, true);
         _withdrawTokenWithTest(userOne, 0, 1, false, true);
     }
 
-    function test_Withdrawal_WhitelistDisabled() external {
+    function test_Withdrawal_AllowlistDisabled() external {
         _addPool(address(this), false);
-        _setWhitelistingStatus(address(this), 0, false);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+        _setAllowlistStatus(address(this), 0, false);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake * 2);
 
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
@@ -227,26 +227,26 @@ contract WithdrawalScenarious is WithdrawalFunctions {
         _withdrawTokenWithTest(userOne, 0, 1, false, true);
     }
 
-    function test_Withdrawal_WhitelistEnabledAfterStaking() external {
+    function test_Withdrawal_AllowlistEnabledAfterStaking() external {
         _addPool(address(this), false);
-        _setWhitelistingStatus(address(this), 0, false);
+        _setAllowlistStatus(address(this), 0, false);
 
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
 
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+        _setAllowlistStatus(address(this), 0, true);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake * 2);
 
         _withdrawTokenWithTest(userOne, 0, 0, false, true);
         _withdrawTokenWithTest(userOne, 0, 1, false, true);
     }
 
-    function test_Withdrawal_WhitelistMultiplePools() external {
+    function test_Withdrawal_AllowlistMultiplePools() external {
         _addPool(address(this), false);
         _addPool(address(this), false);
 
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+        _setAllowlistStatus(address(this), 0, true);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake * 2);
 
         _stakeTokenWithAllowance(userOne, 0, amountToStake);
         _stakeTokenWithAllowance(userOne, 1, amountToStake);
@@ -255,10 +255,10 @@ contract WithdrawalScenarious is WithdrawalFunctions {
         _withdrawTokenWithTest(userOne, 1, 0, false, true);
     }
 
-    function test_Withdrawal_WhitelistWithInterest() external {
+    function test_Withdrawal_AllowlistWithInterest() external {
         _addPool(address(this), false);
-        _setWhitelistingStatus(address(this), 0, true);
-        _setWhitelistedAmountFor(address(this), 0, userOne, amountToStake * 2);
+        _setAllowlistStatus(address(this), 0, true);
+        _addAllowedAmountFor(address(this), 0, userOne, amountToStake * 2);
 
         vm.warp(1706809873);
         _stakeTokenWithAllowance(userOne, 0, amountToStake);

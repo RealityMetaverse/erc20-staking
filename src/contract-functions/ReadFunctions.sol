@@ -48,8 +48,13 @@ abstract contract ReadFunctions is ComplianceCheck {
         return stakingPoolList[poolID].minimumDeposit;
     }
 
-    function checkAPY(uint256 poolID) external view ifPoolExists(poolID) returns (uint256) {
+    /// @dev Internal function to get APY for a pool
+    function _checkAPY(uint256 poolID) internal view returns (uint256) {
         return stakingPoolList[poolID].APY / FIXED_POINT_PRECISION;
+    }
+
+    function checkAPY(uint256 poolID) external view ifPoolExists(poolID) returns (uint256) {
+        return _checkAPY(poolID);
     }
 
     /// @dev Returns timestamp
@@ -98,13 +103,80 @@ abstract contract ReadFunctions is ComplianceCheck {
     // ======================================
     // =    Functoins to check user data    =
     // ======================================
-    function checkWhitelistedAmountFor(address userAddress, uint256 poolID)
+    function checkTotalAllowedAmountFor(address userAddress, uint256 poolID)
         external
         view
         ifPoolExists(poolID)
         returns (uint256)
     {
-        return whitelistedAmounts[poolID][userAddress];
+        return _checkTotalAllowedAmountFor(userAddress, poolID);
+    }
+
+    function checkTotalUsedAllowedAmountFor(address userAddress, uint256 poolID)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256)
+    {
+        return _checkTotalUsedAllowedAmountFor(userAddress, poolID);
+    }
+
+    function checkAllowedAmountLeftFor(address userAddress, uint256 poolID)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256)
+    {
+        return _checkAllowedAmountLeftFor(userAddress, poolID);
+    }
+
+    function getAllowlistEntryCountFor(uint256 poolID, address userAddress)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256)
+    {
+        return userAllowedAmounts[poolID][userAddress].length;
+    }
+
+    function getAllowlistEntriesFor(uint256 poolID, address userAddress)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256[] memory)
+    {
+        return userAllowedAmounts[poolID][userAddress];
+    }
+
+    function _getAllowlistRemainingAmountsFor(address userAddress, uint256 poolID)
+        private
+        view
+        returns (uint256[] memory)
+    {
+        uint256[] memory allowedAmounts = userAllowedAmounts[poolID][userAddress];
+        uint256 usedAmount = _checkTotalUsedAllowedAmountFor(userAddress, poolID);
+        uint256[] memory remainingAmounts = new uint256[](allowedAmounts.length);
+
+        for (uint256 i = 0; i < allowedAmounts.length; i++) {
+            if (usedAmount >= allowedAmounts[i]) {
+                remainingAmounts[i] = 0;
+                usedAmount -= allowedAmounts[i];
+            } else {
+                remainingAmounts[i] = allowedAmounts[i] - usedAmount;
+                usedAmount = 0;
+            }
+        }
+
+        return remainingAmounts;
+    }
+
+    function getAllowlistRemainingAmountsFor(address userAddress, uint256 poolID)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256[] memory)
+    {
+        return _getAllowlistRemainingAmountsFor(userAddress, poolID);
     }
 
     function checkStakedAmountBy(address userAddress, uint256 poolID)
@@ -152,12 +224,111 @@ abstract contract ReadFunctions is ComplianceCheck {
         return stakingPoolList[poolID].fundRestorerList[userAddress];
     }
 
+    function _checkDepositCountOfAddress(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingPoolList[poolID].stakerDepositList[userAddress].length;
+    }
+
     function checkDepositCountOfAddress(address userAddress, uint256 poolID)
-        public
+        external
         view
         ifPoolExists(poolID)
         returns (uint256)
     {
-        return stakingPoolList[poolID].stakerDepositList[userAddress].length;
+        return _checkDepositCountOfAddress(userAddress, poolID);
+    }
+
+    function getDepositsInRangeFor(address userAddress, uint256 poolID, uint256 fromIndex, uint256 toIndex)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (TokenDepositWithClaimableInterest[] memory)
+    {
+        TokenDepositWithClaimableInterest[] memory userDepositsInRange = new TokenDepositWithClaimableInterest[](toIndex - fromIndex);
+
+        for (uint256 i = fromIndex; i < toIndex; i++) {
+            TokenDeposit storage deposit = stakingPoolList[poolID].stakerDepositList[userAddress][i];
+            userDepositsInRange[i - fromIndex].stakingDate = deposit.stakingDate;
+            userDepositsInRange[i - fromIndex].withdrawalDate = deposit.withdrawalDate;
+            userDepositsInRange[i - fromIndex].amount = deposit.amount;
+            userDepositsInRange[i - fromIndex].APY = deposit.APY;
+            userDepositsInRange[i - fromIndex].claimedInterest = deposit.claimedInterest;
+            userDepositsInRange[i - fromIndex].claimableInterest = _checkClaimableInterestBy(userAddress, poolID, i);
+        }
+
+        return userDepositsInRange;
+    }
+
+    /// @dev Returns APY, remaining amounts, and allowed amount left for a user in a pool
+    function checkPoolUserInfo(address userAddress, uint256 poolID)
+        external
+        view
+        ifPoolExists(poolID)
+        returns (uint256 apy, uint256 allowedAmountLeft, uint256[] memory remainingAmounts, uint256 depositCount)
+    {
+        apy = _checkAPY(poolID);
+        allowedAmountLeft = _checkAllowedAmountLeftFor(userAddress, poolID);
+        remainingAmounts = _getAllowlistRemainingAmountsFor(userAddress, poolID);
+        depositCount = _checkDepositCountOfAddress(userAddress, poolID);
+    }
+
+    // ======================================
+    // =   Interest Calculation Functions   =
+    // ======================================
+    function _calculateDaysPassed(uint256 poolID, uint256 startDate, uint256 withdrawalDate)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 timePassed;
+        uint256 poolEndDate = stakingPoolList[poolID].endDate;
+
+        if (withdrawalDate != 0) {
+            if (poolEndDate == 0 || withdrawalDate <= poolEndDate) {
+                timePassed = withdrawalDate - startDate;
+            } else if (withdrawalDate > poolEndDate) {
+                timePassed = poolEndDate - startDate;
+            }
+        } else if (poolEndDate != 0) {
+            timePassed = poolEndDate - startDate;
+        } else {
+            timePassed = block.timestamp - startDate;
+        }
+
+        // Convert the time elapsed to days
+        uint256 daysPassed = timePassed / (1 days);
+        return daysPassed;
+    }
+
+    function _calculateInterest(uint256 poolID, address userAddress, uint256 depositNumber)
+        internal
+        view
+        returns (uint256)
+    {
+        uint256 daysPassed;
+        uint256 depositAPY;
+        uint256 depositAmount;
+        uint256 interestAlreadyClaimed;
+
+        uint256 claimableInterest;
+
+        // A local variable to refer to the appropriate TokenDeposit
+        TokenDeposit storage deposit = stakingPoolList[poolID].stakerDepositList[userAddress][depositNumber];
+
+        daysPassed = _calculateDaysPassed(poolID, deposit.stakingDate, deposit.withdrawalDate);
+        depositAPY = deposit.APY;
+        depositAmount = deposit.amount;
+        interestAlreadyClaimed = deposit.claimedInterest;
+
+        claimableInterest = (((depositAmount * ((depositAPY / 365) * daysPassed) / 100)) / FIXED_POINT_PRECISION)
+            - interestAlreadyClaimed;
+        return claimableInterest;
+    }
+
+    function _checkClaimableInterestBy(address userAddress, uint256 poolID, uint256 depositNumber)
+        internal
+        view
+        returns (uint256)
+    {
+        return _calculateInterest(poolID, userAddress, depositNumber);
     }
 }
