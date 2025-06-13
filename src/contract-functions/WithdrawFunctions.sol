@@ -20,14 +20,7 @@ abstract contract WithdrawFunctions is ReadFunctions, WriteFunctions {
     }
 
     function checkTotalClaimableInterestBy(address userAddress, uint256 poolID) public view returns (uint256) {
-        uint256 userDepositCount = _checkDepositCountOfAddress(userAddress, poolID);
-        uint256 totalClaimableInterest = 0;
-
-        for (uint256 depositNumber = 0; depositNumber < userDepositCount; depositNumber++) {
-            totalClaimableInterest += _checkClaimableInterestBy(userAddress, poolID, depositNumber);
-        }
-
-        return totalClaimableInterest;
+        return _checkTotalClaimableInterestBy(userAddress, poolID);
     }
 
     function checkTotalClaimableInterest(uint256 poolID) external view ifPoolExists(poolID) returns (uint256) {

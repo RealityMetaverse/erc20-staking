@@ -179,13 +179,17 @@ abstract contract ReadFunctions is ComplianceCheck {
         return _getAllowlistRemainingAmountsFor(userAddress, poolID);
     }
 
+    function _checkStakedAmountBy(address userAddress, uint256 poolID) internal view returns (uint256) {
+        return stakingPoolList[poolID].stakerList[userAddress];
+    }
+
     function checkStakedAmountBy(address userAddress, uint256 poolID)
         external
         view
         ifPoolExists(poolID)
         returns (uint256)
     {
-        return stakingPoolList[poolID].stakerList[userAddress];
+        return _checkStakedAmountBy(userAddress, poolID);
     }
 
     function checkDepositStakedAmount(address userAddress, uint256 poolID, uint256 depositNumber)
@@ -243,7 +247,8 @@ abstract contract ReadFunctions is ComplianceCheck {
         ifPoolExists(poolID)
         returns (TokenDepositWithClaimableInterest[] memory)
     {
-        TokenDepositWithClaimableInterest[] memory userDepositsInRange = new TokenDepositWithClaimableInterest[](toIndex - fromIndex);
+        TokenDepositWithClaimableInterest[] memory userDepositsInRange =
+            new TokenDepositWithClaimableInterest[](toIndex - fromIndex);
 
         for (uint256 i = fromIndex; i < toIndex; i++) {
             TokenDeposit storage deposit = stakingPoolList[poolID].stakerDepositList[userAddress][i];
@@ -263,12 +268,21 @@ abstract contract ReadFunctions is ComplianceCheck {
         external
         view
         ifPoolExists(poolID)
-        returns (uint256 apy, uint256 allowedAmountLeft, uint256[] memory remainingAmounts, uint256 depositCount)
+        returns (
+            uint256 apy,
+            uint256 allowedAmountLeft,
+            uint256[] memory remainingAmounts,
+            uint256 depositCount,
+            uint256 totalStakedAmount,
+            uint256 totalClaimableInterest
+        )
     {
         apy = _checkAPY(poolID);
         allowedAmountLeft = _checkAllowedAmountLeftFor(userAddress, poolID);
         remainingAmounts = _getAllowlistRemainingAmountsFor(userAddress, poolID);
         depositCount = _checkDepositCountOfAddress(userAddress, poolID);
+        totalStakedAmount = _checkStakedAmountBy(userAddress, poolID);
+        totalClaimableInterest = _checkTotalClaimableInterestBy(userAddress, poolID);
     }
 
     // ======================================
@@ -330,5 +344,16 @@ abstract contract ReadFunctions is ComplianceCheck {
         returns (uint256)
     {
         return _calculateInterest(poolID, userAddress, depositNumber);
+    }
+
+    function _checkTotalClaimableInterestBy(address userAddress, uint256 poolID) internal view returns (uint256) {
+        uint256 userDepositCount = _checkDepositCountOfAddress(userAddress, poolID);
+        uint256 totalClaimableInterest = 0;
+
+        for (uint256 depositNumber = 0; depositNumber < userDepositCount; depositNumber++) {
+            totalClaimableInterest += _checkClaimableInterestBy(userAddress, poolID, depositNumber);
+        }
+
+        return totalClaimableInterest;
     }
 }
